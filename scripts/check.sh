@@ -38,7 +38,6 @@ done
 
 # >>> 按栈的快速检查：bootstrap --stack 在这里插入，也可以手写
 # ---- generic ----
-# 脚本、配置仓的额外快检写在这里，例如 docker compose config -q、plutil -lint
 # <<< 按栈的快速检查
 
 if [ "$mode" = --quick ]; then
@@ -47,6 +46,58 @@ if [ "$mode" = --quick ]; then
 fi
 
 # >>> 按栈的完整检查：bootstrap --stack 在这里插入，也可以手写
+need jq "brew install jq / apt-get install jq"
+
+if [ -n "${BASE_SHA:-}" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+  step "PR 变更范围与版本号检查"
+  changed_keys=()
+  while IFS= read -r k; do
+    [ -n "$k" ] && changed_keys+=("$k")
+  done < <(git diff --name-only "$BASE_SHA...HEAD" -- 'sources/' | awk -F/ 'NF>=2 {print $2}' | sort -u)
+
+  if [ "${#changed_keys[@]}" -gt 1 ]; then
+    echo "一个 PR 仅允许新增或修改一个来源，本次涉及多个来源：${changed_keys[*]}" >&2
+    exit 1
+  fi
+
+  if [ "${#changed_keys[@]}" -eq 1 ]; then
+    k=${changed_keys[0]}
+    if [ -f "sources/$k/source.json" ] && git cat-file -e "$BASE_SHA:sources/$k/source.json" 2>/dev/null; then
+      if [ -n "$(git diff --name-only "$BASE_SHA...HEAD" -- "sources/$k/source.json")" ]; then
+        old_ver=$(git show "$BASE_SHA:sources/$k/source.json" | jq -r '.meta.version // 0')
+        new_ver=$(jq -r '.meta.version // 0' "sources/$k/source.json")
+        if [ "$new_ver" -le "$old_ver" ]; then
+          echo "sources/$k/source.json 已修改，meta.version（$new_ver）须大于原版本（$old_ver）" >&2
+          exit 1
+        fi
+      fi
+    fi
+  fi
+fi
+
+ferry_commit=${FERRY_COMMIT:-ede2aba39a50b8dad77955d1ae9c852b36393484}
+ferry_bin=${FERRY_BIN:-}
+if [ -z "$ferry_bin" ]; then
+  step "安装 ferry（${ferry_commit}）"
+  need go "brew install go"
+  tmp_bin=$(mktemp -d)
+  trap 'rm -rf "$tmp_bin"' EXIT
+  GOTOOLCHAIN=auto GOBIN="$tmp_bin" go install "github.com/lonelyman0108/ferry/cmd/ferry@${ferry_commit}"
+  ferry_bin="$tmp_bin/ferry"
+fi
+
+step "检查来源定义与测试样例（ferry source check --hub）"
+shopt -s nullglob
+source_dirs=(sources/*/)
+shopt -u nullglob
+if [ "${#source_dirs[@]}" -eq 0 ]; then
+  echo "sources/ 下没有任何来源目录" >&2
+  exit 1
+fi
+"$ferry_bin" source check --hub "${source_dirs[@]}"
+
+step "校验索引文件（ferry hub index --check）"
+"$ferry_bin" hub index --check .
 # <<< 按栈的完整检查
 
 printf '\n完整检查通过\n'

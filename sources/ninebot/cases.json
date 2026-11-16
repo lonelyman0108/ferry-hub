@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "name": "签到请求同时提取 Authorization 与 deviceId",
+      "matcher": "sign",
+      "request": {
+        "method": "POST",
+        "url": "https://cn-cbu-gateway.ninebot.com/portal/api/user-sign/v2/sign",
+        "headers": {
+          "Authorization": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzYW1wbGVfdXNlciJ9.sample_redacted_signature",
+          "Content-Type": "application/json"
+        },
+        "body": "{\"deviceId\":\"sample_device_0001\"}"
+      },
+      "expected": {
+        "authorization": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzYW1wbGVfdXNlciJ9.sample_redacted_signature",
+        "device_id": "sample_device_0001"
+      }
+    }
+  ]
+}
