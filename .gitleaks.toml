@@ -1,0 +1,15 @@
+# gitleaks 本仓配置：在内置规则之上登记误报白名单。pre-commit 与 check.sh 自动读取仓库根的这个文件。
+# 只给确认是假密钥的内容开口子，白名单越窄越好；真泄露要轮换密钥，而不是加白名单。
+title = "ferry-hub gitleaks 配置"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "测试样例 cases.json 中带 sample_redacted 标记的脱敏虚构 JWT"
+paths = [
+  '''^sources/[a-z0-9_-]+/cases\.json$''',
+]
+regexes = [
+  '''sample_redacted''',
+]

@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "sources": [
+    {
+      "key": "ninebot",
+      "name": "九号出行",
+      "description": "打开九号出行 App 的签到页并点击“签到”，即可更新登录态（已签到时同样会发出请求）。\n两个值均位于签到请求中：Authorization 位于请求头，deviceId 位于 JSON 正文。",
+      "icon": "sources/ninebot/icon.svg",
+      "version": 1,
+      "author": "lonelyman0108",
+      "tags": [
+        "出行",
+        "签到"
+      ],
+      "path": "sources/ninebot/source.json",
+      "sha256": "d2ad1f7c8fbd261277b7e53ba100b02faf584db4c54d8ff123e66dd116d5ff02"
+    }
+  ]
+}
